@@ -1,16 +1,18 @@
-import java.io.File;  
-import java.io.IOException;  
- 
-import jxl.Cell;  
-import jxl.Sheet;  
-import jxl.Workbook;  
-import jxl.read.biff.BiffException;  
-import jxl.write.Label;  
-import jxl.write.WritableImage;  
-import jxl.write.WritableSheet;  
-import jxl.write.WritableWorkbook;  
-import jxl.write.WriteException;  
-import jxl.write.biff.RowsExceededException;  
+import java.io.File;
+import java.io.IOException;
+
+import jxl.Cell;
+import jxl.Sheet;
+import jxl.Workbook;
+import jxl.read.biff.BiffException;
+import jxl.write.Label;
+import jxl.write.WritableCellFormat;
+import jxl.write.WritableFont;
+import jxl.write.WritableImage;
+import jxl.write.WritableSheet;
+import jxl.write.WritableWorkbook;
+import jxl.write.WriteException;
+import jxl.write.biff.RowsExceededException;
  
 public class ExcelUtils {  
  
@@ -65,12 +67,15 @@ public class ExcelUtils {
     }  
     /**生成一个Excel文件  
      * @param fileName  要生成的Excel文件名  
+     * @throws WriteException 
+     * @throws RowsExceededException 
      */ 
-    public static void writeExcel(String fileName){  
+    public static void writeExcel(String fileName) throws RowsExceededException, WriteException{  
         WritableWorkbook wwb = null;  
+        File file = new File(fileName);
         try {  
             //首先要使用Workbook类的工厂方法创建一个可写入的工作薄(Workbook)对象  
-            wwb = Workbook.createWorkbook(new File(fileName));  
+            wwb = Workbook.createWorkbook(file);  
         } catch (IOException e) {  
             e.printStackTrace();  
         }
@@ -78,14 +83,14 @@ public class ExcelUtils {
         Workbook wb = null;  
         try {  
             //构造Workbook（工作薄）对象  
-            wb=Workbook.getWorkbook(new File(fileName));  
+            wb = Workbook.getWorkbook(file);  
         } catch (BiffException e) {  
             e.printStackTrace();  
         } catch (IOException e) {  
             e.printStackTrace();  
         }  
           
-        if(wb==null){
+        if(wb==null || wwb == null){
             return;
         }
           
@@ -98,7 +103,7 @@ public class ExcelUtils {
         
         Sheet sourceDataSheet = sheet[0];
         
-        int rows = sourceDataSheet.getRows();
+        int rows = sourceDataSheet.getRows(); 
         for (int i = 0; i < rows; i++) {
         	Cell[] cells = sourceDataSheet.getRow(i);
         	
@@ -119,45 +124,30 @@ public class ExcelUtils {
 			String coilNo = cells[8].getContents();
 			
 			String date = "20130215";
+			WritableSheet  writeSheet = wwb.getSheet(i + 2);
 			
-			//Label deastinationLabel = new Label(j, i, "这是第"+(i+1)+"行，第"+(j+1)+"列"); 
+			// Create a cell format for Times 16, bold and italic 
+			WritableFont deastinationFont = new WritableFont(WritableFont.TIMES, 16, WritableFont.BOLD, true); 
+			WritableCellFormat deastinationformat = new WritableCellFormat (deastinationFont); 
+			Label deastinationLabel = new Label(1, 1, deastination, deastinationformat);
+			writeSheet.addCell(deastinationLabel);
+			
+			WritableFont consgneeFront = new WritableFont(WritableFont.TIMES, 16, WritableFont.BOLD, true); 
+            WritableCellFormat consgneeformat = new WritableCellFormat (consgneeFront); 
+            Label consgneeLabel = new Label(1, 2, consgnee, consgneeformat);
+            writeSheet.addCell(consgneeLabel);
 		}
         
-        
-        
-        if(wwb!=null){  
-            //创建一个可写入的工作表  
-            //Workbook的createSheet方法有两个参数，第一个是工作表的名称，第二个是工作表在工作薄中的位置  
-            WritableSheet ws = wwb.createSheet("sheet1", 0);
-            //下面开始添加单元格  
-            for(int i=0;i<10;i++){  
-                for(int j=0;j<5;j++){  
-                    //这里需要注意的是，在Excel中，第一个参数表示列，第二个表示行  
-                    Label labelC = new Label(j, i, "这是第"+(i+1)+"行，第"+(j+1)+"列");  
-                    try {  
-                        //将生成的单元格添加到工作表中  
-                        ws.addCell(labelC);  
-                        
-                    } catch (RowsExceededException e) {  
-                        e.printStackTrace();  
-                    } catch (WriteException e) {  
-                        e.printStackTrace();  
-                    }  
- 
-                }  
-            }  
- 
-            try {  
-                //从内存中写入文件中  
-                wwb.write();  
-                //关闭资源，释放内存  
-                wwb.close();  
-            } catch (IOException e) {  
-                e.printStackTrace();  
-            } catch (WriteException e) {  
-                e.printStackTrace();  
-            }  
-        }  
+        try {  
+            //从内存中写入文件中  
+            wwb.write();  
+            //关闭资源，释放内存  
+            wwb.close();  
+        } catch (IOException e) {  
+            e.printStackTrace();  
+        } catch (WriteException e) {  
+            e.printStackTrace();  
+        }
     }   
     /**搜索某一个文件中是否包含某个关键字  
      * @param file  待搜索的文件  
@@ -244,26 +234,37 @@ public class ExcelUtils {
       
     public static void main(String[] args) {  
            
+        
+        String filePath = "/home/jamie/Downloads/test.xls";
+        
         try {
-        	String filePath = "/Users/jamiemo/Documents/test.xls";
-        	String picPathString = "/Users/jamiemo/Documents/a.png";
-            Workbook wb = Workbook.getWorkbook(new File(filePath));
-            WritableWorkbook wwb = Workbook.createWorkbook(new File(filePath), wb);
-            WritableSheet[] sheets = wwb.getSheets();
-            for (WritableSheet sheet : sheets) {
-            	File imgFile = new File(picPathString);
-            	insertImg(sheet, 5.5, 7.15, 3.8, 1.8,imgFile);
-            	insertImg(sheet, 5.5, 17.15, 3.8, 1.8,imgFile);
-				
-			} 
-            wwb.write();
-            wwb.close();  
-        } catch (IOException e) {
+            writeExcel(filePath);
+        } catch (RowsExceededException e) {
             e.printStackTrace();
         } catch (WriteException e) {
             e.printStackTrace();
-        } catch (BiffException e) {
-			e.printStackTrace();
-		}
+        }
+        
+//        try {
+//        	String filePath = "/Users/jamiemo/Documents/test.xls";
+//        	String picPathString = "/Users/jamiemo/Documents/a.png";
+//            Workbook wb = Workbook.getWorkbook(new File(filePath));
+//            WritableWorkbook wwb = Workbook.createWorkbook(new File(filePath), wb);
+//            WritableSheet[] sheets = wwb.getSheets();
+//            for (WritableSheet sheet : sheets) {
+//            	File imgFile = new File(picPathString);
+//            	insertImg(sheet, 5.5, 7.15, 3.8, 1.8,imgFile);
+//            	insertImg(sheet, 5.5, 17.15, 3.8, 1.8,imgFile);
+//				
+//			} 
+//            wwb.write();
+//            wwb.close();  
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        } catch (WriteException e) {
+//            e.printStackTrace();
+//        } catch (BiffException e) {
+//			e.printStackTrace();
+//		}
     }
 }
