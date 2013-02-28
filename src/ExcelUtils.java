@@ -35,7 +35,7 @@ public class ExcelUtils {
             return null;  
           
         //获得了Workbook对象之后，就可以通过它得到Sheet（工作表）对象了  
-        Sheet[] sheet = wb.getSheets();  
+        Sheet[] sheet = wb.getSheets();
           
         if(sheet!=null&&sheet.length>0){  
             //对每个工作表进行循环  
@@ -73,12 +73,62 @@ public class ExcelUtils {
             wwb = Workbook.createWorkbook(new File(fileName));  
         } catch (IOException e) {  
             e.printStackTrace();  
+        }
+        
+        Workbook wb = null;  
+        try {  
+            //构造Workbook（工作薄）对象  
+            wb=Workbook.getWorkbook(new File(fileName));  
+        } catch (BiffException e) {  
+            e.printStackTrace();  
+        } catch (IOException e) {  
+            e.printStackTrace();  
         }  
+          
+        if(wb==null){
+            return;
+        }
+          
+        //获得了Workbook对象之后，就可以通过它得到Sheet（工作表）对象了  
+        Sheet[] sheet = wb.getSheets();
+        
+        if (sheet == null || sheet.length < 2) {
+			return;
+		}
+        
+        Sheet sourceDataSheet = sheet[0];
+        
+        int rows = sourceDataSheet.getRows();
+        for (int i = 0; i < rows; i++) {
+        	Cell[] cells = sourceDataSheet.getRow(i);
+        	
+        	//TODO copy sheet from 1
+        	wwb.copySheet(1, cells[1].getContents(), i + 2);
+        	
+        	String deastination = "BARRANQUILLA";
+        	String consgnee = "TO WHOM IT";
+        	String orderNoString = "13YCWG123";
+        	String productName = "Cold - Rolled Steel Coil";
+        	String specification = "ASTM A-424 TYPPE II";
+        	String size = cells[2].getContents() + "0" + " X " + cells[3].getContents() + " X C";
+        	
+        	String grossWgt = Double.valueOf(cells[6].getContents()) * 100 + 110 + "KG";
+			String netWgt = Double.valueOf(cells[6].getContents()) * 100 + "KG";
+			
+			String identification = cells[1].getContents();
+			String coilNo = cells[8].getContents();
+			
+			String date = "20130215";
+			
+			//Label deastinationLabel = new Label(j, i, "这是第"+(i+1)+"行，第"+(j+1)+"列"); 
+		}
+        
+        
+        
         if(wwb!=null){  
             //创建一个可写入的工作表  
             //Workbook的createSheet方法有两个参数，第一个是工作表的名称，第二个是工作表在工作薄中的位置  
-            WritableSheet ws = wwb.createSheet("sheet1", 0);  
-              
+            WritableSheet ws = wwb.createSheet("sheet1", 0);
             //下面开始添加单元格  
             for(int i=0;i<10;i++){  
                 for(int j=0;j<5;j++){  
@@ -87,6 +137,7 @@ public class ExcelUtils {
                     try {  
                         //将生成的单元格添加到工作表中  
                         ws.addCell(labelC);  
+                        
                     } catch (RowsExceededException e) {  
                         e.printStackTrace();  
                     } catch (WriteException e) {  
