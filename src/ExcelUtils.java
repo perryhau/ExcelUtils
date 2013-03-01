@@ -1,6 +1,9 @@
 import java.io.File;
 import java.io.IOException;
 
+import com.sun.medialib.mlib.Image;
+import com.sun.tools.javac.util.Log;
+
 import jxl.Cell;
 import jxl.Sheet;
 import jxl.Workbook;
@@ -16,126 +19,89 @@ import jxl.write.biff.RowsExceededException;
  
 public class ExcelUtils {  
  
-    /**读取Excel文件的内容  
-     * @param file  待读取的文件  
-     * @return  
-     */ 
-    public static String readExcel(File file){  
-        StringBuffer sb = new StringBuffer();  
-          
-        Workbook wb = null;  
-        try {  
-            //构造Workbook（工作薄）对象  
-            wb=Workbook.getWorkbook(file);  
-        } catch (BiffException e) {  
-            e.printStackTrace();  
-        } catch (IOException e) {  
-            e.printStackTrace();  
-        }  
-          
-        if(wb==null)  
-            return null;  
-          
-        //获得了Workbook对象之后，就可以通过它得到Sheet（工作表）对象了  
-        Sheet[] sheet = wb.getSheets();
-          
-        if(sheet!=null&&sheet.length>0){  
-            //对每个工作表进行循环  
-            for(int i=0;i<sheet.length;i++){  
-                //得到当前工作表的行数  
-                int rowNum = sheet[i].getRows();  
-                for(int j=0;j<rowNum;j++){  
-                    //得到当前行的所有单元格  
-                    Cell[] cells = sheet[i].getRow(j);  
-                    if(cells!=null&&cells.length>0){  
-                        //对每个单元格进行循环  
-                        for(int k=0;k<cells.length;k++){  
-                            //读取当前单元格的值  
-                            String cellValue = cells[k].getContents();  
-                            sb.append(cellValue+"\t");  
-                        }  
-                    }  
-                    sb.append("\r\n");  
-                }  
-                sb.append("\r\n");  
-            }  
-        }  
-        //最后关闭资源，释放内存  
-        wb.close();  
-        System.out.println("313");  
-        return sb.toString();  
-    }  
+      
     /**生成一个Excel文件  
      * @param fileName  要生成的Excel文件名  
      * @throws WriteException 
      * @throws RowsExceededException 
      */ 
-    public static void writeExcel(String fileName) throws RowsExceededException, WriteException{  
-        WritableWorkbook wwb = null;  
-        File file = new File(fileName);
-        try {  
-            //首先要使用Workbook类的工厂方法创建一个可写入的工作薄(Workbook)对象  
-            wwb = Workbook.createWorkbook(file);  
-        } catch (IOException e) {  
-            e.printStackTrace();  
-        }
+    public static void writeExcel(String fileName) throws RowsExceededException, WriteException{
         
-        Workbook wb = null;  
-        try {  
-            //构造Workbook（工作薄）对象  
-            wb = Workbook.getWorkbook(file);  
-        } catch (BiffException e) {  
-            e.printStackTrace();  
-        } catch (IOException e) {  
-            e.printStackTrace();  
-        }  
-          
-        if(wb==null || wwb == null){
-            return;
+        Workbook wb = null;
+        WritableWorkbook wwb = null;
+        try {
+            wb = Workbook.getWorkbook(new File(fileName));
+            wwb = Workbook.createWorkbook(new File(fileName), wb);
+        } catch (BiffException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-          
-        //获得了Workbook对象之后，就可以通过它得到Sheet（工作表）对象了  
-        Sheet[] sheet = wb.getSheets();
-        
-        if (sheet == null || sheet.length < 2) {
+        WritableSheet[] sheets = wwb.getSheets();
+        if (sheets == null || sheets.length != 2) {
 			return;
 		}
         
-        Sheet sourceDataSheet = sheet[0];
+        Sheet sourceDataSheet = sheets[0];
         
         int rows = sourceDataSheet.getRows(); 
-        for (int i = 0; i < rows; i++) {
-        	Cell[] cells = sourceDataSheet.getRow(i);
+        for (int i = 1; i < rows; i++) {
+            Cell[] cells = sourceDataSheet.getRow(i);
+        	wwb.copySheet("template", cells[0].getContents(), i + 2);
         	
-        	//TODO copy sheet from 1
-        	wwb.copySheet(1, cells[1].getContents(), i + 2);
+        	String size = cells[1].getContents() + "0" + " X " + cells[2].getContents() + " X " + cells[3].getContents();
         	
-        	String deastination = "BARRANQUILLA";
-        	String consgnee = "TO WHOM IT";
-        	String orderNoString = "13YCWG123";
-        	String productName = "Cold - Rolled Steel Coil";
-        	String specification = "ASTM A-424 TYPPE II";
-        	String size = cells[2].getContents() + "0" + " X " + cells[3].getContents() + " X C";
-        	
-        	String grossWgt = Double.valueOf(cells[6].getContents()) * 100 + 110 + "KG";
-			String netWgt = Double.valueOf(cells[6].getContents()) * 100 + "KG";
+        	String grossWgt = (int)(Double.valueOf(cells[4].getContents()) * 1000) + 110 + "KG";
+        	String netWgt = (int)(Double.valueOf(cells[4].getContents()) * 1000) + "KG";
 			
-			String identification = cells[1].getContents();
-			String coilNo = cells[8].getContents();
+			String identification = cells[0].getContents();
+			String coilNo = cells[6].getContents();
 			
-			String date = "20130215";
-			WritableSheet  writeSheet = wwb.getSheet(i + 2);
+			String date = cells[7].getContents();
 			
-			// Create a cell format for Times 16, bold and italic 
-			WritableFont deastinationFont = new WritableFont(WritableFont.TIMES, 16, WritableFont.BOLD, true); 
-			WritableCellFormat deastinationformat = new WritableCellFormat (deastinationFont); 
-			Label deastinationLabel = new Label(1, 1, deastination, deastinationformat);
-			writeSheet.addCell(deastinationLabel);
+			WritableSheet  writeSheet = wwb.getSheet(i + 1);
 			
-			WritableFont consgneeFront = new WritableFont(WritableFont.TIMES, 16, WritableFont.BOLD, true); 
-            WritableCellFormat consgneeformat = new WritableCellFormat (consgneeFront); 
-            Label consgneeLabel = new Label(1, 2, consgnee, consgneeformat);
-            writeSheet.addCell(consgneeLabel);
+			Label sizeLabel1 = new Label(1 , 5, size); 
+			writeSheet.addCell(sizeLabel1); 
+			Label sizeLabel2 = new Label(1 , 15, size); 
+			writeSheet.addCell(sizeLabel2);
+			
+			
+			Label grossWgtLabel1 = new Label(6, 5, grossWgt);
+			writeSheet.addCell(grossWgtLabel1); 
+			Label grossWgtLabel2 = new Label(6, 15, grossWgt);
+			writeSheet.addCell(grossWgtLabel2); 
+			
+			Label netWgtLabel1 = new Label(9, 5, netWgt);
+            writeSheet.addCell(netWgtLabel1); 
+            Label netWgtLabel2 = new Label(9, 15, netWgt);
+            writeSheet.addCell(netWgtLabel2); 
+            
+            Label identificationLabel1 = new Label(1, 6, identification);
+            writeSheet.addCell(identificationLabel1); 
+            Label identificationLabel2 = new Label(1, 16, identification);
+            writeSheet.addCell(identificationLabel2); 
+            
+            Label coilLabel1 = new Label(6, 6, coilNo);
+            writeSheet.addCell(coilLabel1); 
+            Label coilLabel2 = new Label(6, 16, coilNo);
+            writeSheet.addCell(coilLabel2); 
+            
+            Label dateLabel1 = new Label(4, 8, date);
+            writeSheet.addCell(dateLabel1); 
+            Label dateLabel2 = new Label(4, 18, date);
+            writeSheet.addCell(dateLabel2); 
+            
+            String barCodePicPath = "/Users/Jamie/Documents/barcode.png";
+            File barCodeImgFile = new File(barCodePicPath);
+            insertImg(writeSheet, 5.5, 7.15, 3.8, 1.8,barCodeImgFile);
+            insertImg(writeSheet, 5.5, 17.15, 3.8, 1.8,barCodeImgFile);
+            
+            String headPicPath = "/Users/Jamie/Documents/head.png";
+            File headImgFile = new File(headPicPath);
+            insertImg(writeSheet, 0.2, 0.1, 9, 0.8,headImgFile);
+            insertImg(writeSheet, 0.2, 10.1, 9, 0.8,headImgFile);
+
 		}
         
         try {  
@@ -149,6 +115,36 @@ public class ExcelUtils {
             e.printStackTrace();  
         }
     }   
+    
+    /**往Excel中插入图片  
+     * @param dataSheet  待插入的工作表  
+     * @param col 图片从该列开始  
+     * @param row 图片从该行开始  
+     * @param width 图片所占的列数  
+     * @param height 图片所占的行数  
+     * @param imgFile 要插入的图片文件  
+     */ 
+    public static void insertImg(WritableSheet dataSheet, double col, double row, double width,  
+    		double height, File imgFile){  
+        WritableImage img = new WritableImage(col, row, width, height, imgFile);  
+        dataSheet.addImage(img);  
+    }   
+      
+      
+    public static void main(String[] args) {
+        String filePath = "/Users/Jamie/Documents/label.xls";
+        
+        try {
+            writeExcel(filePath);
+        } catch (RowsExceededException e) {
+            e.printStackTrace();
+        } catch (WriteException e) {
+            e.printStackTrace();
+        }
+    }
+    
+    
+    
     /**搜索某一个文件中是否包含某个关键字  
      * @param file  待搜索的文件  
      * @param keyWord  要搜索的关键字  
@@ -217,54 +213,55 @@ public class ExcelUtils {
         System.out.print(res);  
         return res;  
     }  
-    /**往Excel中插入图片  
-     * @param dataSheet  待插入的工作表  
-     * @param col 图片从该列开始  
-     * @param row 图片从该行开始  
-     * @param width 图片所占的列数  
-     * @param height 图片所占的行数  
-     * @param imgFile 要插入的图片文件  
+    
+    
+    /**读取Excel文件的内容  
+     * @param file  待读取的文件  
+     * @return  
      */ 
-    public static void insertImg(WritableSheet dataSheet, double col, double row, double width,  
-    		double height, File imgFile){  
-        WritableImage img = new WritableImage(col, row, width, height, imgFile);  
-        dataSheet.addImage(img);  
-    }   
-      
-      
-    public static void main(String[] args) {  
-           
-        
-        String filePath = "/home/jamie/Downloads/test.xls";
-        
-        try {
-            writeExcel(filePath);
-        } catch (RowsExceededException e) {
-            e.printStackTrace();
-        } catch (WriteException e) {
-            e.printStackTrace();
-        }
-        
-//        try {
-//        	String filePath = "/Users/jamiemo/Documents/test.xls";
-//        	String picPathString = "/Users/jamiemo/Documents/a.png";
-//            Workbook wb = Workbook.getWorkbook(new File(filePath));
-//            WritableWorkbook wwb = Workbook.createWorkbook(new File(filePath), wb);
-//            WritableSheet[] sheets = wwb.getSheets();
-//            for (WritableSheet sheet : sheets) {
-//            	File imgFile = new File(picPathString);
-//            	insertImg(sheet, 5.5, 7.15, 3.8, 1.8,imgFile);
-//            	insertImg(sheet, 5.5, 17.15, 3.8, 1.8,imgFile);
-//				
-//			} 
-//            wwb.write();
-//            wwb.close();  
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        } catch (WriteException e) {
-//            e.printStackTrace();
-//        } catch (BiffException e) {
-//			e.printStackTrace();
-//		}
+    public static String readExcel(File file){  
+        StringBuffer sb = new StringBuffer();  
+          
+        Workbook wb = null;  
+        try {  
+            //构造Workbook（工作薄）对象  
+            wb=Workbook.getWorkbook(file);  
+        } catch (BiffException e) {  
+            e.printStackTrace();  
+        } catch (IOException e) {  
+            e.printStackTrace();  
+        }  
+          
+        if(wb==null)  
+            return null;  
+          
+        //获得了Workbook对象之后，就可以通过它得到Sheet（工作表）对象了  
+        Sheet[] sheet = wb.getSheets();
+          
+        if(sheet!=null&&sheet.length>0){  
+            //对每个工作表进行循环  
+            for(int i=0;i<sheet.length;i++){  
+                //得到当前工作表的行数  
+                int rowNum = sheet[i].getRows();  
+                for(int j=0;j<rowNum;j++){  
+                    //得到当前行的所有单元格  
+                    Cell[] cells = sheet[i].getRow(j);  
+                    if(cells!=null&&cells.length>0){  
+                        //对每个单元格进行循环  
+                        for(int k=0;k<cells.length;k++){  
+                            //读取当前单元格的值  
+                            String cellValue = cells[k].getContents();  
+                            sb.append(cellValue+"\t");  
+                        }  
+                    }  
+                    sb.append("\r\n");  
+                }  
+                sb.append("\r\n");  
+            }  
+        }  
+        //最后关闭资源，释放内存  
+        wb.close();  
+        System.out.println("313");  
+        return sb.toString();  
     }
 }
